@@ -1,0 +1,36 @@
+name: Init Project
+on:
+  workflow_dispatch:
+    inputs:
+      challengeRef:
+        description: 'Github reference for the challenge to be copied'
+        required: true
+        default: 'refs/heads/challenge-1'
+env:
+  GH_TOKEN: ${{ secrets.GH_TOKEN }}
+  CHALLENGE_REF: '${{ github.event.inputs.challengeRef }}'
+jobs:
+  build:
+    if: github.ref_name == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current repo
+        uses: actions/checkout@v3
+      - name: Checkout challenge branch
+        uses: actions/checkout@v3
+        with:
+          repository: REDspace-recruiting/react-pokedex
+          ref: ${{ env.CHALLENGE_REF }}
+          token: ${{ env.GH_TOKEN }}
+          path: './pokedex'
+      - name: Move files into root (rsync)
+        run: rsync -av --progress ./pokedex/ ./ --exclude .git --exclude .github
+      - name: Remove old directory
+        run: rm -rf ./pokedex
+      - name: Commit
+        run: |
+          git config --local user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git config --local user.name github-actions[bot]ername@users.noreply.github.com
+          git add --all
+          git commit -m "Include challenge files"
+          git push
